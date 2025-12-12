@@ -13,6 +13,8 @@ const historyList = document.getElementById('history-list');
 // Keeps track of the last scanned code to prevent double-logging
 let lastScannedCode = null;
 let scanTimeout = null; // Used to enforce a delay between scans
+let isScanOnCooldown = false; // Cooldown flag to prevent rapid successive scans
+const SCAN_COOLDOWN_MS = 2000; // 2 second cooldown between scans
 
 /**
  * Sends the scanned data to the Google Form.
@@ -72,19 +74,53 @@ function addToHistory(data) {
 
 
 /**
+ * Play a success beep sound
+ */
+function playSuccessBeep() {
+    // Create a simple beep using Web Audio API
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = 1000; // 1000 Hz frequency
+    oscillator.type = 'sine';
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.1);
+}
+
+/**
  * Callback function for successful QR code scanning.
  * @param {string} decodedText - The data from the QR code.
  * @param {object} decodedResult - The raw result object.
  */
 function onScanSuccess(decodedText, decodedResult) {
+    // Prevent scanning during cooldown period
+    if (isScanOnCooldown) {
+        return;
+    }
+    
     // Prevent logging the same code repeatedly in quick succession
     if (decodedText === lastScannedCode) {
         logStatus.textContent = `Skipped: Already logged this code recently.`;
         return; 
     }
 
+    // Activate cooldown
+    isScanOnCooldown = true;
+    setTimeout(() => {
+        isScanOnCooldown = false;
+    }, SCAN_COOLDOWN_MS);
+
     // Update the last scanned code and log it
     lastScannedCode = decodedText;
+    playSuccessBeep();
     logToGoogleSheet(decodedText);
 }
 
@@ -98,38 +134,35 @@ function onScanError(error) {
 
 // Initialize the QR code scanner
 function initializeScanner() {
-    const html5QrcodeScanner = new Html5QrcodeScanner(
-        "reader", // ID of the HTML element where the scanner will be rendered
-        { 
-            fps: 10, // Frames per second for scanning
-            qrbox: { width: 250, height: 250 } // Size of the scanning box
-        },
-        false // Verbose logging (false to keep console clean)
-    );
+    // Wait for the Html5QrcodeScanner to be available
+    if (typeof Html5QrcodeScanner === 'undefined') {
+        console.log('Waiting for Html5QrcodeScanner library to load...');
+        setTimeout(initializeScanner, 100);
+        return;
+    }
 
-    html5QrcodeScanner.render(onScanSuccess, onScanError);
+    try {
+        const html5QrcodeScanner = new Html5QrcodeScanner(
+            "reader", // ID of the HTML element where the scanner will be rendered
+            { 
+                fps: 10, // Frames per second for scanning
+                qrbox: { width: 250, height: 250 } // Size of the scanning box
+            },
+            false // Verbose logging (false to keep console clean)
+        );
+
+        html5QrcodeScanner.render(onScanSuccess, onScanError);
+        console.log('QR Code scanner initialized successfully');
+    } catch (error) {
+        console.error('Error initializing scanner:', error);
+        logStatus.textContent = 'Error: ' + error.message;
+    }
 }
 
 // Start the scanner when the page loads
-document.addEventListener('DOMContentLoaded', initializeScanner);
-
-/**
- * Callback function for errors during scanning.
- * @param {string} errorMessage - The error details.
- */
-function onScanError(errorMessage) {
-    // We can keep this empty or log the error to the console for debugging
-    // console.log(`Scan Error: ${errorMessage}`);
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeScanner);
+} else {
+    // If the DOM is already loaded, initialize immediately
+    initializeScanner();
 }
-
-// Initialize the QR code scanner
-const html5QrcodeScanner = new Html5QrcodeScanner(
-    "reader", { 
-        fps: 10, 
-        qrbox: { width: 250, height: 250 } 
-    },
-    /* verbose= */ false
-);
-
-// Start the scanner
-html5QrcodeScanner.render(onScanSuccess, onScanError);
