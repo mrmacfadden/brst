@@ -77,19 +77,9 @@ function addToHistory(data) {
  * @param {object} decodedResult - The raw result object.
  */
 function onScanSuccess(decodedText, decodedResult) {
-    // Check if this is the specific QR code you want to log
-    // **!!! IMPORTANT: Replace 'YOUR_SPECIFIC_QR_CODE' with the actual data from your special QR code !!!**
-    const SPECIFIC_CODE = 'YOUR_SPECIFIC_QR_CODE'; 
-
-    if (decodedText !== SPECIFIC_CODE) {
-        logStatus.className = 'error';
-        logStatus.textContent = `Code scanned: "${decodedText}". Waiting for the specific code: "${SPECIFIC_CODE}"`;
-        return; // Stop if it's not the code you're looking for
-    }
-    
     // Prevent logging the same code repeatedly in quick succession
     if (decodedText === lastScannedCode) {
-        logStatus.textContent = `Skipped: Already logged this specific code recently.`;
+        logStatus.textContent = `Skipped: Already logged this code recently.`;
         return; 
     }
 
@@ -97,6 +87,31 @@ function onScanSuccess(decodedText, decodedResult) {
     lastScannedCode = decodedText;
     logToGoogleSheet(decodedText);
 }
+
+/**
+ * Error callback for QR code scanning (optional).
+ */
+function onScanError(error) {
+    // Handle errors silently to avoid cluttering the UI
+    // The scanner continuously attempts to detect codes
+}
+
+// Initialize the QR code scanner
+function initializeScanner() {
+    const html5QrcodeScanner = new Html5QrcodeScanner(
+        "reader", // ID of the HTML element where the scanner will be rendered
+        { 
+            fps: 10, // Frames per second for scanning
+            qrbox: { width: 250, height: 250 } // Size of the scanning box
+        },
+        false // Verbose logging (false to keep console clean)
+    );
+
+    html5QrcodeScanner.render(onScanSuccess, onScanError);
+}
+
+// Start the scanner when the page loads
+document.addEventListener('DOMContentLoaded', initializeScanner);
 
 /**
  * Callback function for errors during scanning.

@@ -1,0 +1,120 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+}
+
+.container {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    padding: 30px;
+    max-width: 600px;
+    width: 100%;
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 30px;
+    font-size: 28px;
+}
+
+h2 {
+    color: #555;
+    font-size: 18px;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #667eea;
+    padding-bottom: 10px;
+}
+
+#reader {
+    width: 100%;
+    border: 3px solid #667eea;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    background: #f5f5f5;
+    min-height: 300px;
+}
+
+#log-status {
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    text-align: center;
+    font-weight: 500;
+    min-height: 24px;
+    background-color: #f0f0f0;
+    color: #666;
+    border-left: 4px solid #ccc;
+}
+
+#log-status.success {
+    background-color: #d4edda;
+    color: #155724;
+    border-left-color: #28a745;
+}
+
+#log-status.error {
+    background-color: #f8d7da;
+    color: #721c24;
+    border-left-color: #f5c6cb;
+}
+
+#scan-history {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 2px solid #f0f0f0;
+}
+
+#history-list {
+    list-style: none;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+#history-list li {
+    padding: 12px;
+    margin-bottom: 8px;
+    background-color: #f8f9fa;
+    border-left: 4px solid #667eea;
+    border-radius: 4px;
+    color: #333;
+    font-size: 14px;
+    word-break: break-all;
+}
+
+#history-list li:hover {
+    background-color: #e8eaf6;
+}
+
+#history-list li:empty {
+    display: none;
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+    .container {
+        padding: 20px;
+    }
+
+    h1 {
+        font-size: 22px;
+        margin-bottom: 20px;
+    }
+
+    #reader {
+        min-height: 250px;
+    }
+}
