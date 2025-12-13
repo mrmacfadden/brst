@@ -9,11 +9,15 @@ const INPUT_FIELD_ID = "entry.58506922";
 // Elements for status and history
 const logStatus = document.getElementById('log-status');
 const historyList = document.getElementById('history-list');
+const confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
+const modalQRData = document.getElementById('modalQRData');
+const confirmButton = document.getElementById('confirmButton');
 
 // Keeps track of the last scanned code to prevent double-logging
 let lastScannedCode = null;
 let scanTimeout = null; // Used to enforce a delay between scans
 let isScanOnCooldown = false; // Cooldown flag to prevent rapid successive scans
+let pendingQRCode = null; // Stores the QR code data pending confirmation
 const SCAN_COOLDOWN_MS = 2000; // 2 second cooldown between scans
 
 /**
@@ -118,10 +122,14 @@ function onScanSuccess(decodedText, decodedResult) {
         isScanOnCooldown = false;
     }, SCAN_COOLDOWN_MS);
 
-    // Update the last scanned code and log it
+    // Store the scanned code and show confirmation modal
+    pendingQRCode = decodedText;
     lastScannedCode = decodedText;
     playSuccessBeep();
-    logToGoogleSheet(decodedText);
+    
+    // Display the QR code data in the modal
+    modalQRData.textContent = decodedText;
+    confirmationModal.show();
 }
 
 /**
@@ -158,6 +166,15 @@ function initializeScanner() {
         logStatus.textContent = 'Error: ' + error.message;
     }
 }
+
+// Handle confirmation button click
+confirmButton.addEventListener('click', () => {
+    if (pendingQRCode) {
+        confirmationModal.hide();
+        logToGoogleSheet(pendingQRCode);
+        pendingQRCode = null;
+    }
+});
 
 // Start the scanner when the page loads
 if (document.readyState === 'loading') {

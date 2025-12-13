@@ -3,25 +3,245 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QR Code Scanner Logger</title>
+    <title>BRST Rewards</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background-color: #667eea;
+        }
+
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+
+        .offcanvas {
+            width: 350px;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .qr-container {
+            text-align: center;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2rem;
+        }
+
+        #qrcode {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            min-height: 250px;
+        }
+
+        .form-section {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .form-control {
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+
+        .btn-save {
+            background-color: #667eea;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        .btn-save:hover {
+            background-color: #5568d3;
+        }
+
+        .optional-badge {
+            font-size: 0.75rem;
+            color: #999;
+            margin-left: 5px;
+        }
+
+        .nav-link {
+            color: white !important;
+        }
+
+        .nav-link:hover {
+            color: #f0f0f0 !important;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>BRST Rewards</h1>
-        
-        <div id="reader"></div>
+    <!-- Navigation Bar with Hamburger Menu -->
+    <nav class="navbar navbar-dark sticky-top">
+        <div class="container-fluid">
+            <span class="navbar-brand">BRST Rewards</span>
+            <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#profileOffcanvas" aria-controls="profileOffcanvas">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+    </nav>
 
-        <div id="log-status">
-            </div>
+    <!-- Offcanvas Sidebar with Form -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="profileOffcanvas" aria-labelledby="profileOffcanvasLabel">
+        <div class="offcanvas-header bg-primary text-white">
+            <h5 class="offcanvas-title" id="profileOffcanvasLabel">Your Profile</h5>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <form id="profileForm">
+                <div class="form-section">
+                    <label for="firstName" class="form-label">First Name</label>
+                    <input type="text" class="form-control" id="firstName" name="firstName" required>
+                </div>
 
-        <div id="scan-history">
-            <h2>Scan History</h2>
-            <ul id="history-list"></ul>
+                <div class="form-section">
+                    <label for="lastName" class="form-label">Last Name</label>
+                    <input type="text" class="form-control" id="lastName" name="lastName" required>
+                </div>
+
+                <div class="form-section">
+                    <label for="email" class="form-label">Email Address</label>
+                    <input type="email" class="form-control" id="email" name="email" required>
+                </div>
+
+                <div class="form-section">
+                    <label for="phone" class="form-label">Phone Number <span class="optional-badge">(Optional)</span></label>
+                    <input type="tel" class="form-control" id="phone" name="phone">
+                </div>
+
+                <button type="submit" class="btn btn-save btn-primary w-100">Save Profile</button>
+            </form>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
-    <script src="script.js"></script>
+    <!-- Main Content -->
+    <main>
+        <div class="qr-container">
+            <h1>BRST Rewards</h1>
+            <div id="qrcode"></div>
+            <p class="text-muted">Click the menu to update your profile</p>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        const profileForm = document.getElementById('profileForm');
+        const firstNameInput = document.getElementById('firstName');
+        const lastNameInput = document.getElementById('lastName');
+        const emailInput = document.getElementById('email');
+        const phoneInput = document.getElementById('phone');
+        const qrcodeContainer = document.getElementById('qrcode');
+
+        // Load profile data from local storage on page load
+        function loadProfile() {
+            const savedProfile = localStorage.getItem('brstProfile');
+            if (savedProfile) {
+                const profile = JSON.parse(savedProfile);
+                firstNameInput.value = profile.firstName || '';
+                lastNameInput.value = profile.lastName || '';
+                emailInput.value = profile.email || '';
+                phoneInput.value = profile.phone || '';
+                generateQRCode();
+            }
+        }
+
+        // Generate QR Code based on form data
+        function generateQRCode() {
+            const firstName = firstNameInput.value.trim();
+            const lastName = lastNameInput.value.trim();
+            const email = emailInput.value.trim();
+            const phone = phoneInput.value.trim();
+
+            // Clear previous QR code
+            qrcodeContainer.innerHTML = '';
+
+            // Only generate if at least some data is present
+            if (firstName || lastName || email || phone) {
+                // Create a text representation of the data
+                const qrData = `First Name: ${firstName}\nLast Name: ${lastName}\nEmail: ${email}${phone ? '\nPhone: ' + phone : ''}`;
+
+                // Generate the QR code
+                new QRCode(qrcodeContainer, {
+                    text: qrData,
+                    width: 250,
+                    height: 250,
+                    colorDark: '#000000',
+                    colorLight: '#ffffff',
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+            } else {
+                qrcodeContainer.innerHTML = '<p class="text-muted">Enter your profile information to generate QR code</p>';
+            }
+        }
+
+        // Handle form submission
+        profileForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const profile = {
+                firstName: firstNameInput.value,
+                lastName: lastNameInput.value,
+                email: emailInput.value,
+                phone: phoneInput.value
+            };
+
+            // Save to local storage
+            localStorage.setItem('brstProfile', JSON.stringify(profile));
+
+            // Generate QR code
+            generateQRCode();
+
+            // Close the offcanvas
+            const offcanvasElement = document.getElementById('profileOffcanvas');
+            const offcanvas = bootstrap.Offcanvas.getInstance(offcanvasElement);
+            if (offcanvas) {
+                offcanvas.hide();
+            }
+        });
+
+        // Update QR code as user types
+        [firstNameInput, lastNameInput, emailInput, phoneInput].forEach(input => {
+            input.addEventListener('input', generateQRCode);
+        });
+
+        // Load profile data when page loads
+        window.addEventListener('load', loadProfile);
+    </script>
 </body>
 </html>
