@@ -24,6 +24,7 @@ function getLocationPrefix() {
 // Elements for status and history
 const logStatus = document.getElementById('log-status');
 const historyList = document.getElementById('history-list');
+const locationDisplay = document.getElementById('locationDisplay');
 const confirmationModal = new bootstrap.Modal(document.getElementById('confirmationModal'));
 const modalQRData = document.getElementById('modalQRData');
 const confirmButton = document.getElementById('confirmButton');
@@ -199,8 +200,26 @@ confirmButton.addEventListener('click', () => {
 
 // Start the scanner when the page loads
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeScanner);
+    document.addEventListener('DOMContentLoaded', () => {
+        displayLocation();
+        initializeScanner();
+    });
 } else {
     // If the DOM is already loaded, initialize immediately
+    displayLocation();
     initializeScanner();
+}
+
+/**
+ * Display the location from URL parameters in the header
+ */
+function displayLocation() {
+    const params = new URLSearchParams(window.location.search);
+    const locationParam = params.get('s') || params.get('l');
+    if (locationParam) {
+        const formatted = locationParam.split('-').map(word => 
+            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+        ).join(' ');
+        locationDisplay.textContent = formatted;
+    }
 }

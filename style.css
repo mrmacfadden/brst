@@ -23,6 +23,11 @@ body.admin-page {
 .accent-bg{
     background-color: #667eea !important;
 }
+#locationDisplay{
+    font-weight:100;
+    font-size:16px;
+    color:#929292;
+}
 /* Index/Navbar styles */
 .navbar {
     background-color: #667eea;
