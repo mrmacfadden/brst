@@ -20,6 +20,9 @@ body.admin-page {
     padding: 20px;
 }
 
+.accent-bg{
+    background-color: #667eea !important;
+}
 /* Index/Navbar styles */
 .navbar {
     background-color: #667eea;
