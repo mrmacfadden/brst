@@ -6,6 +6,21 @@ const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSf4rDh_qVFIIKr
 const INPUT_FIELD_ID = "entry.58506922"; 
 // **********************************************
 
+/**
+ * Get location string from URL parameters
+ */
+function getLocationPrefix() {
+    const params = new URLSearchParams(window.location.search);
+    const locationParam = params.get('s') || params.get('l');
+    if (locationParam) {
+        const formatted = locationParam.split('-').map(word => 
+            word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+        ).join(' ');
+        return `Location: ${formatted}\n`;
+    }
+    return '';
+}
+
 // Elements for status and history
 const logStatus = document.getElementById('log-status');
 const historyList = document.getElementById('history-list');
@@ -29,9 +44,13 @@ function logToGoogleSheet(qrCodeData) {
     logStatus.className = '';
     logStatus.textContent = `Logging "${qrCodeData}"...`;
     
+    // Prepend location information from URL parameters if available
+    const locationPrefix = getLocationPrefix();
+    const dataToSubmit = locationPrefix + qrCodeData;
+    
     // Construct the data payload for the form submission
     const formData = new FormData();
-    formData.append(INPUT_FIELD_ID, qrCodeData);
+    formData.append(INPUT_FIELD_ID, dataToSubmit);
 
     // Google Forms submission requires 'no-cors' mode 
     // and sends the data in the query string/URL-encoded body.
@@ -47,22 +66,18 @@ function logToGoogleSheet(qrCodeData) {
         logStatus.textContent = `SUCCESS: Logged "${qrCodeData}" at ${new Date().toLocaleTimeString()}`;
         
         // Add to history
-        addToHistory(qrCodeData);
+        addToHistory(dataToSubmit);
 
-        // Reset the lastScannedCode after a brief period to allow scanning the same code again
-        // after a deliberate pause (e.g., 5 seconds)
+        // Reset status after a brief period
         clearTimeout(scanTimeout);
         scanTimeout = setTimeout(() => {
-            lastScannedCode = null;
             logStatus.textContent = 'Ready for next scan...';
-        }, 5000); // 5-second delay to re-scan the same code
+        }, 5000); // 5-second delay before resetting status
     })
     .catch(error => {
         // Error message
         logStatus.className = 'error';
         logStatus.textContent = `ERROR: Could not log data. ${error.message}`;
-        // Immediately reset to allow re-scan in case of a network error
-        lastScannedCode = null; 
     });
 }
 
@@ -109,12 +124,6 @@ function onScanSuccess(decodedText, decodedResult) {
     if (isScanOnCooldown) {
         return;
     }
-    
-    // Prevent logging the same code repeatedly in quick succession
-    if (decodedText === lastScannedCode) {
-        logStatus.textContent = `Skipped: Already logged this code recently.`;
-        return; 
-    }
 
     // Activate cooldown
     isScanOnCooldown = true;
@@ -124,11 +133,23 @@ function onScanSuccess(decodedText, decodedResult) {
 
     // Store the scanned code and show confirmation modal
     pendingQRCode = decodedText;
-    lastScannedCode = decodedText;
     playSuccessBeep();
     
-    // Display the QR code data in the modal
-    modalQRData.textContent = decodedText;
+    // Display the QR code data in the modal (with location prefix if applicable)
+    const locationPrefix = getLocationPrefix();
+    const dataToDisplay = locationPrefix + decodedText;
+    
+    // Parse and format the data for better readability
+    const lines = dataToDisplay.split('\n').filter(line => line.trim());
+    const formattedContent = document.createElement('div');
+    lines.forEach(line => {
+        const lineDiv = document.createElement('div');
+        lineDiv.textContent = line;
+        formattedContent.appendChild(lineDiv);
+    });
+    
+    modalQRData.innerHTML = '';
+    modalQRData.appendChild(formattedContent);
     confirmationModal.show();
 }
 
